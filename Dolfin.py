@@ -1,18 +1,14 @@
-from urllib.request import urlopen
-from urllib.error import HTTPError, URLError
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver import ActionChains
-from selenium.webdriver.support.wait import WebDriverWait as wait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import NoSuchElementException
-from locators import PageLocators
-import collections
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from urllib.request import urlopen
 import time
 import re
+from urllib.error import HTTPError, URLError
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+from locators import PageLocators
+
 
 
 def Get_url(numUrl):
@@ -26,21 +22,19 @@ def Get_url(numUrl):
     
     if numUrl == 'divar':
         return Dict.get(1)
-    elif numUrl == 'sheyp':
-        return Dict.get(2)
-    else:
-        return None
-    
 
+    return Dict.get(2)
+    
+    
+# Further use
 def Get_path(PATH):
 
-    if PATH == 'chrome'.lower():
+    if PATH == 'chrome':
         return 'C:\\Users\\mehdi\\Desktop\\Driver\\chromedriver.exe'
 
-    elif PATH == 'firefox'.lower():
-        return None
+    return None
 
-
+# (1920*1080) loading all the elements
 def Config_browser():
     path = Get_path('chrome')
     chrome_options = Options()
@@ -56,7 +50,7 @@ brow = Config_browser()
 lstOfCities = []
 lstOfLinks = []
 
-
+#Extracting City Urls from the menu
 try:
     html = urlopen(url)
     bs_object = BeautifulSoup(html.read(), 'html.parser')
@@ -79,16 +73,14 @@ except HTTPError as h:
 
 
 CityUrls = list(map(lambda n: url + n ,lstOfLinks))
-nums = [i for i in range(1,10)]
+nums = [i for i in range(len(CityUrls))]
 dictofCities = dict(zip(nums, CityUrls))
 
 
-# for i, j in zip(dictofCities.keys(), dictofCities.values()):
-#     print(i, j)
+# Hard-coded
+options = {'Vehicle': ['/vehicles', '/auto']}
 
-Options = {'Vehicle': ['/vehicles', '/auto']}
-
-goto = dictofCities[3] + Options.get('Vehicle')[1]
+goto = dictofCities[3] + options.get('Vehicle')[1]
 
     
 def Init():
@@ -101,43 +93,56 @@ def Init():
     brow.get(goto)
     brow.find_element(By.XPATH, '//*[@id="app"]/div[1]/div/aside/div/section[2]/div[7]/label/div/div/div').click()
 
-    time.sleep(5)
+    time.sleep(7)
 
     source = brow.page_source
     soup = BeautifulSoup(source, 'html.parser')
     
-    last_height = brow.execute_script("return document.body.scrollHeight")
-
     def EachPage():
-        for elem in soup.find('div', {'class': 'browse-post-list'}).find_all('div', {'class': PageLocators.DIV}):
-    
-            desc.append(elem.h2.get_text())    
-            img.append(elem.img['data-src'])
-            href.append(Get_url('divar') + elem.a['href'])
 
-        cnt = sum([1 for _ in range(len(href))])
-        print(href)
-        return cnt
-
-    
-    if soup.find('div', {'style': 'top:0;position:absolute;height:100%;width:100%'}):
-        EachPage()
-        
-        while cnt % 2 == 0:
-            brow.execute_script(f'window.scrollTo(0, {last_height});')
-
-            time.sleep(5)
-
-            new_height = brow.execute_script('return document.body.scrollHeight')
+        last_height = brow.execute_script("return document.body.scrollHeight")
+        while True:
             
+            brow.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+            
+            source = brow.page_source
+            soup = BeautifulSoup(source, 'html.parser')
+            time.sleep(7)
+
+            """
+            program scrapes (description, href, and img links) of first page,
+            then it scrolls down and makes a beautiful soup object out of new div tags and scrapes the above elements again
+            """
+
+            for elem in soup.find('div', {'class': 'browse-post-list'}).find_all('div', {'class': PageLocators.DIV}):
+
+                if elem not in desc:
+                    desc.append(elem.h2.get_text())  
+
+                if elem not in img: 
+                    img.append(elem.img['data-src'])
+
+                if elem not in href:
+                    href.append(Get_url('divar') + elem.a['href'])
+
+            new_height = brow.execute_script("return document.body.scrollHeight")
+
+            # Check whether scrolling pages are finished
             if new_height == last_height:
                 break
 
             last_height = new_height
-            EachPage()
 
-    else:
+            # print(href)
+
+    # Checking whether the scraper is scraping from the first page!
+    if soup.find('div', {'style': 'top:0;position:absolute;height:100%;width:100%'}):
         EachPage()
-
+         
 
 Init()
+
+# The following statements are still needed! 
+# OOP approach 
+# Downloading Images
+# Writing data into csv files for NN 
