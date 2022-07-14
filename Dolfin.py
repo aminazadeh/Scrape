@@ -1,6 +1,9 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
+import requests
+import io
+from PIL import Image
 import time
 import re
 from urllib.error import HTTPError, URLError
@@ -8,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from locators import PageLocators
+
 
 
 
@@ -82,14 +86,14 @@ options = {'Vehicle': ['/vehicles', '/auto']}
 
 goto = dictofCities[3] + options.get('Vehicle')[1]
 
+
     
 def Init():
 
     img = list()
     desc = list()
     href = list()
-    cnt = 0
-
+  
     brow.get(goto)
     brow.find_element(By.XPATH, '//*[@id="app"]/div[1]/div/aside/div/section[2]/div[7]/label/div/div/div').click()
 
@@ -99,7 +103,8 @@ def Init():
     soup = BeautifulSoup(source, 'html.parser')
     
     def EachPage():
-
+        index = 0
+        
         last_height = brow.execute_script("return document.body.scrollHeight")
         while True:
             
@@ -125,6 +130,8 @@ def Init():
                 if elem not in href:
                     href.append(Get_url('divar') + elem.a['href'])
 
+                
+
             new_height = brow.execute_script("return document.body.scrollHeight")
 
             # Check whether scrolling pages are finished
@@ -132,17 +139,27 @@ def Init():
                 break
 
             last_height = new_height
+            
+        # Downloading images
+        try:
+            for image in img:
+                    
+                
+                Content = requests.get(image).content
+                image_file = io.BytesIO(Content)
+                Image_ = Image.open(image_file)
+                file_path = '' + f'pic{index}.jpg'
+                
+                with open(file_path, 'wb') as f:
+                    Image_.save(f, 'JPEG')
+                    index += 1
 
-            # print(href)
-
+        except Exception as e:
+            print('-------Image Not Downloaded-----')
+            
     # Checking whether the scraper is scraping from the first page!
     if soup.find('div', {'style': 'top:0;position:absolute;height:100%;width:100%'}):
         EachPage()
-         
+    
 
 Init()
-
-# The following statements are still needed! 
-# OOP approach 
-# Downloading Images
-# Writing data into csv files for NN 
