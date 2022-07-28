@@ -117,11 +117,17 @@ def Init():
 
             for elem in soup.find('div', {'class': 'browse-post-list'}).find_all('div', {'class': PageLocators.DIV}):
 
-                if elem not in img: 
-                    img.append(elem.img['data-src'])
+                for e in elem:
+                    if e in img:
+                        continue
+                else:
+                    img.append(e.img['data-src'])
 
-                if elem not in href:
-                    href.append(divar + elem.a['href'])
+                for h in elem:
+                    if h in href:
+                        continue
+                    else:
+                        href.append(divar + h.a['href'])
 
             count = sum([1 for _ in range(len(href))])
             
@@ -132,7 +138,7 @@ def Init():
             if new_height == last_height:
                 break
             
-            if count >= 25:
+            if count >= 1500:
                 break
             
             last_height = new_height
